@@ -145,13 +145,8 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
   //   }
   //   setClose();
   // };
-  import { sendInvitation } from "@/lib/queries"; // Import sendInvitation function
-  import { toast } from "../ui/use-toast"; // Import toast for success/error notifications
-
-  // Inside the TicketForm component
   const onSubmit = async (values: z.infer<typeof TicketFormSchema>) => {
     if (!laneId) return;
-
     try {
       const response = await upsertTicket(
         {
@@ -164,53 +159,47 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
         tags
       );
 
-      // Log the activity (existing functionality)
       await saveActivityLogsNotification({
         agencyId: undefined,
         description: `Updated a ticket | ${response?.name}`,
         subaccountId,
       });
 
-      // Fetch the assigned user's details
+      // Fetch email of assigned user
       const assignedUser = allTeamMembers.find(
         (member) => member.id === assignedTo
       );
 
-      // Send email notification if the assigned user has an email
+      // Call API to send an email if assigned user exists
       if (assignedUser?.email) {
-        try {
-          const role = "team_member"; // You can adjust this based on your role logic
-          const agencyId = subaccountId; // or another ID you use for the agency
-
-          // Call sendInvitation method
-          await sendInvitation(role, assignedUser.email, agencyId);
-
-          // Show success toast after sending the email
-          toast({
-            title: "Success",
-            description: "Ticket saved and email sent!",
-          });
-        } catch (error) {
-          console.error("Failed to send email:", error);
-          toast({
-            variant: "destructive",
-            title: "Email Notification Failed",
-            description: "Ticket saved, but failed to send email notification.",
-          });
-        }
+        await fetch("/api/send-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: assignedUser.email,
+            subject: `Ticket Assigned: ${values.name}`,
+            message: `Hi ${assignedUser.name},\n\nYou have been assigned to the ticket: "${values.name}".\n\nDescription: ${values.description}\n\nThanks!`,
+          }),
+        });
       }
+
+      toast({
+        title: "Success",
+        description: "Saved details and sent email notification",
+      });
 
       if (response) getNewTicket(response);
       router.refresh();
     } catch (error) {
-      console.error("Error saving ticket:", error);
+      console.error(error);
       toast({
         variant: "destructive",
         title: "Oops!",
-        description: "Could not save details or send email.",
+        description: "Could not save pipeline details or send email",
       });
     }
-
     setClose();
   };
 
