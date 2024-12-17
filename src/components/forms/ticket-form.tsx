@@ -1,20 +1,20 @@
-'use client'
+"use client";
 import {
   getSubAccountTeamMembers,
   saveActivityLogsNotification,
   searchContacts,
   upsertTicket,
-} from '@/lib/queries'
-import { TicketFormSchema, TicketWithTags } from '@/lib/types'
-import { useModal } from '@/providers/modal-provider'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Contact, Tag, User } from '@prisma/client'
-import { useRouter } from 'next/navigation'
-import React, { useEffect, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { toast } from '../ui/use-toast'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+} from "@/lib/queries";
+import { TicketFormSchema, TicketWithTags } from "@/lib/types";
+import { useModal } from "@/providers/modal-provider";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Contact, Tag, User } from "@prisma/client";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { toast } from "../ui/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   Form,
   FormControl,
@@ -23,9 +23,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '../ui/input'
-import { Textarea } from '../ui/textarea'
+} from "@/components/ui/form";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 import {
   Select,
   SelectContent,
@@ -34,84 +34,120 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
-import { CheckIcon, ChevronsUpDownIcon, User2 } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
-import { Button } from '../ui/button'
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { CheckIcon, ChevronsUpDownIcon, User2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Button } from "../ui/button";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from '../ui/command'
-import { cn } from '@/lib/utils'
-import Loading from '../global/loading'
-import TagCreator from '../global/tag-creator'
+} from "../ui/command";
+import { cn } from "@/lib/utils";
+import Loading from "../global/loading";
+import TagCreator from "../global/tag-creator";
 
 type Props = {
-  laneId: string
-  subaccountId: string
-  getNewTicket: (ticket: TicketWithTags[0]) => void
-}
+  laneId: string;
+  subaccountId: string;
+  getNewTicket: (ticket: TicketWithTags[0]) => void;
+};
 
 const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
-  const { data: defaultData, setClose } = useModal()
-  const router = useRouter()
-  const [tags, setTags] = useState<Tag[]>([])
-  const [contact, setContact] = useState('')
-  const [search, setSearch] = useState('')
-  const [contactList, setContactList] = useState<Contact[]>([])
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>()
-  const [allTeamMembers, setAllTeamMembers] = useState<User[]>([])
+  const { data: defaultData, setClose } = useModal();
+  const router = useRouter();
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [contact, setContact] = useState("");
+  const [search, setSearch] = useState("");
+  const [contactList, setContactList] = useState<Contact[]>([]);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const [allTeamMembers, setAllTeamMembers] = useState<User[]>([]);
   const [assignedTo, setAssignedTo] = useState(
-    defaultData.ticket?.Assigned?.id || ''
-  )
+    defaultData.ticket?.Assigned?.id || ""
+  );
   const form = useForm<z.infer<typeof TicketFormSchema>>({
-    mode: 'onChange',
+    mode: "onChange",
     resolver: zodResolver(TicketFormSchema),
     defaultValues: {
-      name: defaultData.ticket?.name || '',
-      description: defaultData.ticket?.description || '',
+      name: defaultData.ticket?.name || "",
+      description: defaultData.ticket?.description || "",
       value: String(defaultData.ticket?.value || 0),
     },
-  })
-  const isLoading = form.formState.isLoading
+  });
+  const isLoading = form.formState.isLoading;
 
   useEffect(() => {
     if (subaccountId) {
       const fetchData = async () => {
-        const response = await getSubAccountTeamMembers(subaccountId)
-        if (response) setAllTeamMembers(response)
-      }
-      fetchData()
+        const response = await getSubAccountTeamMembers(subaccountId);
+        if (response) setAllTeamMembers(response);
+      };
+      fetchData();
     }
-  }, [subaccountId])
+  }, [subaccountId]);
 
   useEffect(() => {
     if (defaultData.ticket) {
       form.reset({
-        name: defaultData.ticket.name || '',
-        description: defaultData.ticket?.description || '',
+        name: defaultData.ticket.name || "",
+        description: defaultData.ticket?.description || "",
         value: String(defaultData.ticket?.value || 0),
-      })
+      });
       if (defaultData.ticket.customerId)
-        setContact(defaultData.ticket.customerId)
+        setContact(defaultData.ticket.customerId);
 
       const fetchData = async () => {
         const response = await searchContacts(
           //@ts-ignore
           defaultData.ticket?.Customer?.name
-        )
-        setContactList(response)
-      }
-      fetchData()
+        );
+        setContactList(response);
+      };
+      fetchData();
     }
-  }, [defaultData])
+  }, [defaultData]);
 
+  // const onSubmit = async (values: z.infer<typeof TicketFormSchema>) => {
+  //   if (!laneId) return;
+  //   try {
+  //     const response = await upsertTicket(
+  //       {
+  //         ...values,
+  //         laneId,
+  //         id: defaultData.ticket?.id,
+  //         assignedUserId: assignedTo,
+  //         ...(contact ? { customerId: contact } : {}),
+  //       },
+  //       tags
+  //     );
+
+  //     await saveActivityLogsNotification({
+  //       agencyId: undefined,
+  //       description: `Updated a ticket | ${response?.name}`,
+  //       subaccountId,
+  //     });
+
+  //     toast({
+  //       title: "Success",
+  //       description: "Saved  details",
+  //     });
+  //     if (response) getNewTicket(response);
+  //     router.refresh();
+  //   } catch (error) {
+  //     toast({
+  //       variant: "destructive",
+  //       title: "Oppse!",
+  //       description: "Could not save pipeline details",
+  //     });
+  //   }
+  //   setClose();
+  // };
   const onSubmit = async (values: z.infer<typeof TicketFormSchema>) => {
-    if (!laneId) return
+    if (!laneId) return;
+
     try {
       const response = await upsertTicket(
         {
@@ -122,29 +158,65 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
           ...(contact ? { customerId: contact } : {}),
         },
         tags
-      )
+      );
 
       await saveActivityLogsNotification({
         agencyId: undefined,
         description: `Updated a ticket | ${response?.name}`,
         subaccountId,
-      })
+      });
+
+      // Fetch the assigned user's details
+      const assignedUser = allTeamMembers.find(
+        (member) => member.id === assignedTo
+      );
+
+      // Send email notification
+      if (assignedUser?.email) {
+        const mailResponse = await fetch("/api/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: assignedUser.email,
+            subject: `New Ticket Assigned: ${values.name}`,
+            text: `Hi ${assignedUser.name},\n\nYou have been assigned a new ticket: "${values.name}".\n\nDescription: ${values.description}\n\nBest regards,\nYour Team`,
+            html: `
+              <h3>Hi ${assignedUser.name},</h3>
+              <p>You have been assigned a new ticket: <strong>${values.name}</strong>.</p>
+              <p><strong>Description:</strong> ${values.description}</p>
+              <p>Best regards,<br>Your Team</p>
+            `,
+          }),
+        });
+
+        if (!mailResponse.ok) {
+          console.error("Failed to send email notification");
+          toast({
+            variant: "destructive",
+            title: "Warning",
+            description: "Ticket saved, but failed to send email notification.",
+          });
+        }
+      }
 
       toast({
-        title: 'Success',
-        description: 'Saved  details',
-      })
-      if (response) getNewTicket(response)
-      router.refresh()
+        title: "Success",
+        description: "Ticket saved and email sent!",
+      });
+
+      if (response) getNewTicket(response);
+      router.refresh();
     } catch (error) {
+      console.error("Error saving ticket:", error);
       toast({
-        variant: 'destructive',
-        title: 'Oppse!',
-        description: 'Could not save pipeline details',
-      })
+        variant: "destructive",
+        title: "Oops!",
+        description: "Could not save details or send email.",
+      });
     }
-    setClose()
-  }
+
+    setClose();
+  };
 
   return (
     <Card className="w-full">
@@ -165,10 +237,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 <FormItem>
                   <FormLabel>Ticket Name</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Name"
-                      {...field}
-                    />
+                    <Input placeholder="Name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -182,10 +251,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Description"
-                      {...field}
-                    />
+                    <Textarea placeholder="Description" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,10 +265,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 <FormItem>
                   <FormLabel>Ticket Value</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Value"
-                      {...field}
-                    />
+                    <Input placeholder="Value" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -215,10 +278,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
               defaultTags={defaultData.ticket?.Tags || []}
             />
             <FormLabel>Assigned To Team Member</FormLabel>
-            <Select
-              onValueChange={setAssignedTo}
-              defaultValue={assignedTo}
-            >
+            <Select onValueChange={setAssignedTo} defaultValue={assignedTo}>
               <SelectTrigger>
                 <SelectValue
                   placeholder={
@@ -239,16 +299,10 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
               </SelectTrigger>
               <SelectContent>
                 {allTeamMembers.map((teamMember) => (
-                  <SelectItem
-                    key={teamMember.id}
-                    value={teamMember.id}
-                  >
+                  <SelectItem key={teamMember.id} value={teamMember.id}>
                     <div className="flex items-center gap-2">
                       <Avatar className="w-8 h-8">
-                        <AvatarImage
-                          alt="contact"
-                          src={teamMember.avatarUrl}
-                        />
+                        <AvatarImage alt="contact" src={teamMember.avatarUrl} />
                         <AvatarFallback className="bg-primary text-sm text-white">
                           <User2 size={14} />
                         </AvatarFallback>
@@ -264,10 +318,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
             </Select>
             <FormLabel>Customer</FormLabel>
             <Popover>
-              <PopoverTrigger
-                asChild
-                className="w-full"
-              >
+              <PopoverTrigger asChild className="w-full">
                 <Button
                   variant="outline"
                   role="combobox"
@@ -275,7 +326,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 >
                   {contact
                     ? contactList.find((c) => c.id === contact)?.name
-                    : 'Select Customer...'}
+                    : "Select Customer..."}
                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -287,17 +338,17 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                     value={search}
                     onChangeCapture={async (value) => {
                       //@ts-ignore
-                      setSearch(value.target.value)
+                      setSearch(value.target.value);
                       if (saveTimerRef.current)
-                        clearTimeout(saveTimerRef.current)
+                        clearTimeout(saveTimerRef.current);
                       saveTimerRef.current = setTimeout(async () => {
                         const response = await searchContacts(
                           //@ts-ignore
                           value.target.value
-                        )
-                        setContactList(response)
-                        setSearch('')
-                      }, 1000)
+                        );
+                        setContactList(response);
+                        setSearch("");
+                      }, 1000);
                     }}
                   />
                   <CommandEmpty>No Customer found.</CommandEmpty>
@@ -308,15 +359,15 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                         value={c.id}
                         onSelect={(currentValue) => {
                           setContact(
-                            currentValue === contact ? '' : currentValue
-                          )
+                            currentValue === contact ? "" : currentValue
+                          );
                         }}
                       >
                         {c.name}
                         <CheckIcon
                           className={cn(
-                            'ml-auto h-4 w-4',
-                            contact === c.id ? 'opacity-100' : 'opacity-0'
+                            "ml-auto h-4 w-4",
+                            contact === c.id ? "opacity-100" : "opacity-0"
                           )}
                         />
                       </CommandItem>
@@ -325,18 +376,14 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 </Command>
               </PopoverContent>
             </Popover>
-            <Button
-              className="w-20 mt-4"
-              disabled={isLoading}
-              type="submit"
-            >
-              {form.formState.isSubmitting ? <Loading /> : 'Save'}
+            <Button className="w-20 mt-4" disabled={isLoading} type="submit">
+              {form.formState.isSubmitting ? <Loading /> : "Save"}
             </Button>
           </form>
         </Form>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default TicketForm
+export default TicketForm;
