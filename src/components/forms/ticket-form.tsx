@@ -145,9 +145,63 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
   //   }
   //   setClose();
   // };
+  // const onSubmit = async (values: z.infer<typeof TicketFormSchema>) => {
+  //   if (!laneId) return;
+
+  //   try {
+  //     const response = await upsertTicket(
+  //       {
+  //         ...values,
+  //         laneId,
+  //         id: defaultData.ticket?.id,
+  //         assignedUserId: assignedTo,
+  //         ...(contact ? { customerId: contact } : {}),
+  //       },
+  //       tags
+  //     );
+
+  //     await saveActivityLogsNotification({
+  //       agencyId: undefined,
+  //       description: `Updated a ticket | ${response?.name}`,
+  //       subaccountId,
+  //     });
+
+  //     // Fetch the assigned user's details
+  //     const assignedUser = allTeamMembers.find(
+  //       (member) => member.id === assignedTo
+  //     );
+
+  //     // Send email notification
+  //     if (assignedUser?.email) {
+  //       const mailResponse = await fetch("/api/send-mail", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({
+  //           to: assignedUser.email,
+  //           subject: `New Ticket Assigned: ${values.name}`,
+  //           text: `Hi ${assignedUser.name},\n\nYou have been assigned a new ticket: "${values.name}".\n\nDescription: ${values.description}\n\nBest regards,\nYour Team`,
+  //           html: `
+  //             <h3>Hi ${assignedUser.name},</h3>
+  //             <p>You have been assigned a new ticket: <strong>${values.name}</strong>.</p>
+  //             <p><strong>Description:</strong> ${values.description}</p>
+  //             <p>Best regards,<br>Your Team</p>
+  //           `,
+  //         }),
+  //       });
+
+  //       if (!mailResponse.ok) {
+  //         console.error("Failed to send email notification");
+  //         toast({
+  //           variant: "destructive",
+  //           title: "Warning",
+  //           description: "Ticket saved, but failed to send email notification.",
+  //         });
+  //       }
+  //     }
+
   const onSubmit = async (values: z.infer<typeof TicketFormSchema>) => {
     if (!laneId) return;
-
+  
     try {
       const response = await upsertTicket(
         {
@@ -159,45 +213,54 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
         },
         tags
       );
-
+  
+      // Log the activity (existing functionality)
       await saveActivityLogsNotification({
         agencyId: undefined,
         description: `Updated a ticket | ${response?.name}`,
         subaccountId,
       });
-
+  
       // Fetch the assigned user's details
-      const assignedUser = allTeamMembers.find(
-        (member) => member.id === assignedTo
-      );
-
-      // Send email notification
+      const assignedUser = allTeamMembers.find((member) => member.id === assignedTo);
+  
+      // Send email notification if the assigned user has an email
       if (assignedUser?.email) {
-        const mailResponse = await fetch("/api/send-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: assignedUser.email,
-            subject: `New Ticket Assigned: ${values.name}`,
-            text: `Hi ${assignedUser.name},\n\nYou have been assigned a new ticket: "${values.name}".\n\nDescription: ${values.description}\n\nBest regards,\nYour Team`,
-            html: `
-              <h3>Hi ${assignedUser.name},</h3>
-              <p>You have been assigned a new ticket: <strong>${values.name}</strong>.</p>
-              <p><strong>Description:</strong> ${values.description}</p>
-              <p>Best regards,<br>Your Team</p>
-            `,
-          }),
-        });
-
-        if (!mailResponse.ok) {
-          console.error("Failed to send email notification");
+        try {
+          const role = "team_member"; // You can adjust this based on your role logic
+          const agencyId = subaccountId; // or another ID you use for the agency
+  
+          // Call sendInvitation method
+          await sendInvitation(role, assignedUser.email, agencyId);
+  
+          // Show success toast after sending the email
+          toast({
+            title: "Success",
+            description: "Ticket saved and email sent!",
+          });
+        } catch (error) {
+          console.error("Failed to send email:", error);
           toast({
             variant: "destructive",
-            title: "Warning",
+            title: "Email Notification Failed",
             description: "Ticket saved, but failed to send email notification.",
           });
         }
       }
+  
+      if (response) getNewTicket(response);
+      router.refresh();
+    } catch (error) {
+      console.error("Error saving ticket:", error);
+      toast({
+        variant: "destructive",
+        title: "Oops!",
+        description: "Could not save details or send email.",
+      });
+    }
+  
+    setClose();
+  };
 
       toast({
         title: "Success",
