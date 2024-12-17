@@ -31,3 +31,14 @@ const Funnels = async ({ params }: { params: { subaccountId: string } }) => {
 }
 
 export default Funnels
+// import React from 'react'
+
+// type Props = {}
+
+// const Funnels = (props: Props) => {
+//   return (
+//     <div >Funnels</div>
+//   )
+// }
+
+// export default Funnels
