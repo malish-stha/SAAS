@@ -9,11 +9,11 @@ export default async function handler(
     const { to, subject, text, html } = req.body;
 
     // Validate input
-    if (!to || !subject || (!text && !html)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing required fields" });
-    }
+    // if (!to || !subject || (!text && !html)) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "Missing required fields" });
+    // }
 
     try {
       // Send email using the sendMail utility
